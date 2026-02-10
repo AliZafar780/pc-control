@@ -1,0 +1,91 @@
+# SocialAI Configuration Example
+# Copy this file to config.yaml and fill in your values
+
+# AI Configuration
+ai:
+  # AI provider: openai, anthropic, or local
+  provider: openai
+  
+  # Model to use
+  model: gpt-4
+  
+  # Temperature (0.0 to 2.0) - lower is more focused
+  temperature: 0.7
+  
+  # Maximum tokens for AI responses
+  max_tokens: 1000
+
+# Platform Configuration
+platforms:
+  twitter:
+    enabled: true
+    # Hide engagement metrics in focus mode
+    hide_likes: true
+    hide_retweets: false
+    focus_mode: true
+    # Twitter API credentials (optional - can use environment variables)
+    # api_key: your-api-key
+    # api_secret: your-api-secret
+    # access_token: your-access-token
+    # access_token_secret: your-access-secret
+  
+  reddit:
+    enabled: true
+    hide_upvotes: true
+    collapse_comments: true
+    # Reddit API credentials
+    # client_id: your-client-id
+    # client_secret: your-client-secret
+    # user_agent: SocialAI/1.0
+  
+  linkedin:
+    enabled: true
+    hide_reactions: true
+    hide_comments: true
+    # LinkedIn credentials if needed
+    # api_key: your-api-key
+  
+  hackernews:
+    enabled: true
+    hide_upvotes: true
+
+# Focus Mode Configuration
+focus:
+  enabled: true
+  session_duration: 30  # minutes
+  break_interval: 5    # minutes
+  # Content filters (hide posts containing these)
+  content_filter:
+    - type: keyword
+      action: hide
+      value: controversy
+    - type: keyword
+      action: hide
+      value: politics
+
+# Output Configuration
+output:
+  # Format: rich, json, plain, markdown
+  format: rich
+  # Enable colored output
+  color: true
+  # Terminal width
+  width: 80
+  # Wrap long text
+  wrap_text: true
+
+# Storage Configuration
+storage:
+  # Path to SQLite database
+  db_path: ./data/socialai.db
+  # Cache TTL in seconds
+  cache_ttl: 3600
+  # Maximum history entries
+  max_history: 1000
+
+# API Keys (alternative to environment variables)
+# api_keys:
+#   openai: your-openai-api-key
+#   anthropic: your-anthropic-api-key
+#   twitter: your-twitter-api-key
+#   reddit: your-reddit-client-id
