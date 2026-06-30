@@ -20,7 +20,7 @@ praw>=7.7.0
 httpx>=0.24.0
 
 # Utilities
-typer>=0.9.0
+typer>=0.26.8
 colorama>=0.4.6
 cachetools>=5.3.0
 beautifulsoup4>=4.12.0
