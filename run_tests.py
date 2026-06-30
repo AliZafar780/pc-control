@@ -3,6 +3,7 @@
 Simple test runner for SocialAI.
 """
 
+import os
 import sys
 import subprocess
 
@@ -11,12 +12,15 @@ def run_tests():
     """Run the test suite."""
     print("Running SocialAI tests...")
     
+    # Use the script's own directory so this works from any location
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    
     try:
         # Run pytest
         result = subprocess.run(
             [sys.executable, "-m", "pytest", "tests/", "-v"],
             capture_output=False,
-            cwd="/home/engine/project/pc-control"
+            cwd=script_dir,
         )
         
         if result.returncode == 0:

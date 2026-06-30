@@ -33,6 +33,23 @@ class PlatformConfig(BaseModel):
     access_token: Optional[str] = None
     access_token_secret: Optional[str] = None
 
+    # Fields considered sensitive and masked in __repr__
+    _sensitive_fields = {
+        'api_key', 'api_secret', 'access_token', 'access_token_secret',
+        'client_id', 'client_secret',
+    }
+
+    def __repr__(self) -> str:
+        """Return representation with sensitive credential fields masked."""
+        fields = []
+        for name in self.__fields__:
+            value = getattr(self, name)
+            if name in self._sensitive_fields:
+                fields.append(f"{name}='***'" if value is not None else f"{name}=None")
+            else:
+                fields.append(f"{name}={value!r}")
+        return f"{self.__class__.__name__}({', '.join(fields)})"
+
 
 class TwitterConfig(PlatformConfig):
     """Twitter-specific configuration."""
@@ -180,6 +197,9 @@ class Config:
         config_dir.mkdir(parents=True, exist_ok=True)
         
         try:
+            # WARNING: API keys and secrets are stored in PLAINTEXT in this YAML file.
+            # Restrict file permissions (e.g., chmod 600 on Linux) to protect credentials.
+            # Consider using environment variables or a secret manager instead.
             with open(self.config_path, 'w', encoding='utf-8') as f:
                 yaml.dump(config, f, default_flow_style=False, indent=2)
         except Exception as e:
@@ -252,6 +272,9 @@ class Config:
             config_dir = Path(self.config_path).parent
             config_dir.mkdir(parents=True, exist_ok=True)
             
+            # WARNING: API keys and secrets are stored in PLAINTEXT in this YAML file.
+            # Restrict file permissions (e.g., chmod 600 on Linux) to protect credentials.
+            # Consider using environment variables or a secret manager instead.
             with open(self.config_path, 'w', encoding='utf-8') as f:
                 yaml.dump(self._config, f, default_flow_style=False, indent=2)
         except Exception as e:
@@ -308,7 +331,10 @@ class Config:
         return issues
     
     def __repr__(self) -> str:
-        return f"Config(path='{self.config_path}')"
+        return (
+            f"Config(path='{self.config_path}', "
+            f"[sensitive data masked - use object attributes for full details])"
+        )
 
 
 # Global config instance

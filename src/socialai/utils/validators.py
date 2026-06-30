@@ -5,23 +5,100 @@ Validation functions for URLs, platforms, and other inputs.
 """
 
 import re
+import socket
+import ipaddress
 from typing import Optional, List
 from urllib.parse import urlparse
+
+# Set of known safe social media / content domains for the allowlist.
+# URLs pointing to these domains are always permitted.
+URL_ALLOWLIST = {
+    "twitter.com", "www.twitter.com", "x.com", "www.x.com",
+    "reddit.com", "www.reddit.com",
+    "linkedin.com", "www.linkedin.com",
+    "hackernews.com", "www.hackernews.com", "news.ycombinator.com",
+    "facebook.com", "www.facebook.com",
+    "instagram.com", "www.instagram.com",
+    "tiktok.com", "www.tiktok.com",
+    "youtube.com", "www.youtube.com",
+    "github.com", "www.github.com",
+    "medium.com", "www.medium.com",
+    "dev.to", "www.dev.to",
+}
+
+
+def _is_private_hostname(hostname: str) -> bool:
+    """Check if a hostname resolves to a private or internal IP address.
+
+    Returns True for known loopback hosts, private IP ranges,
+    link-local addresses, and unspecified addresses.
+    """
+    # Immediate string matches for common internal names
+    if hostname in ("localhost", "127.0.0.1", "0.0.0.0", "[::1]", "::1"):
+        return True
+
+    # Internal TLDs / unresolvable namespaces (RFC 6761, RFC 2606)
+    if hostname.endswith(".local") or hostname.endswith(".internal"):
+        return True
+
+    # Try DNS resolution and inspect the resolved IP
+    try:
+        addr = socket.gethostbyname(hostname)
+        ip_obj = ipaddress.ip_address(addr)
+        if (
+            ip_obj.is_private
+            or ip_obj.is_loopback
+            or ip_obj.is_link_local
+            or ip_obj.is_unspecified
+            or ip_obj.is_multicast
+        ):
+            return True
+    except (socket.gaierror, OSError, ValueError):
+        # If we can't resolve, err on the side of caution — block it
+        # to prevent DNS rebinding / SSRF to internal resolvers.
+        return True
+
+    return False
 
 
 def validate_url(url: str) -> bool:
     """
     Validate if a string is a properly formatted URL.
-    
+
+    Enforces SSRF protections:
+      - Only http / https schemes are allowed.
+      - Private, loopback, link-local, multicast, and unspecified IPs are blocked.
+      - Hostnames that cannot be resolved are blocked (prevents DNS rebinding).
+
     Args:
         url: URL string to validate
-    
+
     Returns:
-        True if valid URL, False otherwise
+        True if valid and safe URL, False otherwise
     """
     try:
         result = urlparse(url)
-        return all([result.scheme, result.netloc])
+        if not all([result.scheme, result.netloc]):
+            return False
+
+        # Only allow http and https
+        if result.scheme not in ("http", "https"):
+            return False
+
+        # Extract hostname (lowercased, without port)
+        hostname = result.hostname
+        if not hostname:
+            return False
+
+        # Allow-list check: if the hostname is a known safe domain, skip IP checks
+        if hostname.lower() in URL_ALLOWLIST:
+            return True
+
+        # Block internal / private hosts
+        if _is_private_hostname(hostname):
+            return False
+
+        return True
     except Exception:
         return False
 
